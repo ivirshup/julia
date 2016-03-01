@@ -182,7 +182,7 @@ static DWORD64 WINAPI JuliaGetModuleBase64(
 static void jl_unw_get(bt_context_t *context)
 {
     memset(context, 0, sizeof(*context));
-    RtlCaptureContext(&context);
+    RtlCaptureContext(context);
 }
 
 int needsSymRefreshModuleList;
@@ -199,7 +199,6 @@ static int jl_unw_init(bt_cursor_t *cursor, bt_context_t *Context)
     if (jl_in_stackwalk) {
         return 0;
     }
-    DWORD MachineType = IMAGE_FILE_MACHINE_I386;
     memset(&cursor->stackframe, 0, sizeof(cursor->stackframe));
     cursor->stackframe.AddrPC.Offset = Context->Eip;
     cursor->stackframe.AddrStack.Offset = Context->Esp;
@@ -209,15 +208,20 @@ static int jl_unw_init(bt_cursor_t *cursor, bt_context_t *Context)
     cursor->stackframe.AddrFrame.Mode = AddrModeFlat;
     jl_in_stackwalk = 1;
 #endif
-    cursor->context = Context;
+#if defined(_CPU_X86_64_)
+    *cursor = *Context;
+#else
+    cursor->context = *Context;
+#endif
     return 1;
 }
 
 static int jl_unw_step(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp)
 {
 #ifndef _CPU_X86_64_
-    *ip = (uintptr_t)cursor.stackframe.AddrPC.Offset;
-    *sp = (uintptr_t)cursor.stackframe.AddrStack.Offset;
+    DWORD MachineType = IMAGE_FILE_MACHINE_I386;
+    *ip = (uintptr_t)cursor->stackframe.AddrPC.Offset;
+    *sp = (uintptr_t)cursor->stackframe.AddrStack.Offset;
     BOOL result = StackWalk64(MachineType, GetCurrentProcess(), hMainThread,
         &cursor->stackframe, &cursor->context, NULL, JuliaFunctionTableAccess64, JuliaGetModuleBase64, NULL);
     return result;

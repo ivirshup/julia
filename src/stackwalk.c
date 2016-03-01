@@ -4,10 +4,14 @@
   task.c
   lightweight processes (symmetric coroutines)
 */
+#include <inttypes.h>
 #include "julia.h"
 #include "julia_internal.h"
 #include "threading.h"
 
+#if defined(_OS_WINDOWS_)
+#include <dbghelp.h>
+#endif
 
 static void jl_unw_get(bt_context_t *context);
 static int jl_unw_init(bt_cursor_t *cursor, bt_context_t *context);
@@ -257,7 +261,7 @@ static int jl_unw_step(bt_cursor_t *cursor, uintptr_t *ip, uintptr_t *sp)
                 &EstablisherFrame,
                 NULL);
     }
-    return Context->Rip != 0;
+    return cursor->Rip != 0;
 #endif
 }
 

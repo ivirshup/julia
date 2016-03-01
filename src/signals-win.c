@@ -300,7 +300,7 @@ static DWORD WINAPI profile_bt( LPVOID lparam )
                 break;
             }
             // Get backtrace data
-            bt_size_cur += rec_backtrace_ctx((bt_data_prof + bt_size_cur, bt_size_max - bt_size_cur - 1, &ctxThread);
+            bt_size_cur += rec_backtrace_ctx(bt_data_prof + bt_size_cur, bt_size_max - bt_size_cur - 1, &ctxThread);
             // Mark the end of this block with 0
             bt_data_prof[bt_size_cur] = 0;
             bt_size_cur++;

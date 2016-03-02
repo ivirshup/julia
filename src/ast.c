@@ -484,7 +484,6 @@ static jl_value_t *scm_to_julia_(fl_context_t *fl_ctx, value_t e, int eo)
                 e = cdr_(e);
             }
             nli = jl_new_lambda_info((jl_value_t*)ex, tvars, jl_emptysvec, jl_current_module);
-            jl_preresolve_globals(nli->ast, nli);
             JL_GC_POP();
             return (jl_value_t*)nli;
         }
@@ -1110,10 +1109,6 @@ jl_value_t *jl_preresolve_globals(jl_value_t *expr, jl_lambda_info_t *lam)
             return expr;
         if (!jl_local_in_linfo(lam, (jl_sym_t*)expr))
             return jl_module_globalref(lam->module, (jl_sym_t*)expr);
-    }
-    else if (jl_is_lambda_info(expr)) {
-        jl_lambda_info_t *l = (jl_lambda_info_t*)expr;
-        (void)jl_preresolve_globals(l->ast, l);
     }
     else if (jl_is_expr(expr)) {
         jl_expr_t *e = (jl_expr_t*)expr;

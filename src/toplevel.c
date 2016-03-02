@@ -730,7 +730,6 @@ static jl_lambda_info_t *expr_to_lambda(jl_expr_t *f)
     }
     // wrap in a LambdaInfo
     jl_lambda_info_t *li = jl_new_lambda_info((jl_value_t*)f, tvar_syms, jl_emptysvec, jl_current_module);
-    jl_preresolve_globals(li->ast, li);
     JL_GC_POP();
     return li;
 }
@@ -746,6 +745,10 @@ JL_DLLEXPORT void jl_method_def(jl_svec_t *argdata, jl_lambda_info_t *f, jl_valu
 
     if (!jl_is_lambda_info(f))
         f = expr_to_lambda((jl_expr_t*)f);
+    jl_preresolve_globals(f->ast, f);
+    if (tvars != jl_emptysvec && !f->needs_sparam_vals_ducttape &&
+        jl_has_intrinsics(f, (jl_expr_t*)f->ast, f->module))
+        f->needs_sparam_vals_ducttape = 1;
 
     assert(jl_is_lambda_info(f));
     assert(jl_is_tuple_type(argtypes));

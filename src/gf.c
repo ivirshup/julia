@@ -335,7 +335,7 @@ jl_lambda_info_t *jl_get_unspecialized(jl_lambda_info_t *method)
         method->unspecialized = jl_add_static_parameters(def, method->sparam_vals, method->specTypes);
         jl_gc_wb(method, method->unspecialized);
         method->unspecialized->unspecialized = method->unspecialized;
-        def = method;
+        return method->unspecialized;
     }
     if (def->unspecialized == NULL) {
         def->unspecialized = jl_add_static_parameters(def, jl_emptysvec, jl_anytuple_type);
@@ -406,25 +406,18 @@ void jl_type_infer(jl_lambda_info_t *li, jl_lambda_info_t *def)
         // called
         assert(li->inInference == 0);
         li->inInference = 1;
-        jl_value_t *fargs[4];
+        jl_value_t *fargs[3];
         fargs[0] = (jl_value_t*)jl_typeinf_func;
         fargs[1] = (jl_value_t*)li;
         fargs[2] = (jl_value_t*)li->specTypes;
-        fargs[3] = (jl_value_t*)def;
+        assert(def == li->def);
 #ifdef TRACE_INFERENCE
         jl_printf(JL_STDERR,"inference on ");
         jl_static_show_func_sig(JL_STDERR, (jl_value_t*)li->specTypes);
         jl_printf(JL_STDERR, "\n");
 #endif
 #ifdef ENABLE_INFERENCE
-        jl_value_t *newast = jl_apply(fargs, 4);
-        jl_value_t *defast = def->ast;
-        li->ast = jl_fieldref(newast, 0);
-        jl_gc_wb(li, li->ast);
-        li->rettype = jl_fieldref(newast, 1);
-        jl_gc_wb(li, li->rettype);
-        // if type inference bails out it returns def->ast
-        li->inferred = li->ast != defast;
+        (void)jl_apply(fargs, 3);
 #endif
         li->inInference = 0;
     }
@@ -930,6 +923,7 @@ JL_DLLEXPORT jl_lambda_info_t *jl_instantiate_staged(jl_lambda_info_t *generator
     // need to eval macros in the right module, but not give a warning for the `eval` call unless that results in a call to `eval`
     jl_lambda_info_t *func = (jl_lambda_info_t*)jl_toplevel_eval_in_warn(generator->module, (jl_value_t*)ex, 1);
     func->name = generator->name;
+    func->def = generator;
     JL_GC_POP();
     return func;
 }
